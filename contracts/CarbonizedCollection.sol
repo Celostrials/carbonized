@@ -36,7 +36,6 @@ contract CarbonizedCollection is
     // tokenId => carbon credits per token paid
     mapping(uint256 => uint256) public idCarbonPerTokenPaid;
     uint256 totalGToken;
-    uint256 carbonCreditsRetired;
 
     function initialize(
         address _originalCollection,
@@ -92,16 +91,6 @@ contract CarbonizedCollection is
             decarbonize(tokenIds[i]);
         }
     }
-
-    // TODO: When Celo carbon retirment available
-    // function retireCarbon(uint256 amount) external _updateCarbonDeposits(-1) {
-    //     require(
-    //         IERC20Upgradeable(carbonCredit).balanceOf(address(this)) > 0,
-    //         "CarbonizedCollection: No credits to retire."
-    //     );
-    //
-    //     carbonCreditsRetired += amount;
-    // }
 
     function carbonBalance(address account) external view returns (uint256 carbon) {
         (, uint256[] memory carbonBalances, ) = walletOfOwner(account);
@@ -159,8 +148,7 @@ contract CarbonizedCollection is
         }
         return
             carbonPerGTokenStored +
-            ((carbonCreditsRetired + IERC20Upgradeable(carbonCredit).balanceOf(address(this))) /
-                totalGToken);
+            (IERC20Upgradeable(carbonCredit).balanceOf(address(this)) / totalGToken);
     }
 
     function onERC721Received(
