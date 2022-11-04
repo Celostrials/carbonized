@@ -23,21 +23,18 @@ contract CarbonizedCollection is
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
-    ImpactVaultInterface gTokenVault;
     IERC721Upgradeable public originalCollection;
-    IERC20Upgradeable public stToken;
-
+    ImpactVaultInterface public gTokenVault;
     address public carbonCredit;
     string public baseURI;
     string public baseExtension;
-    uint256 public retiredPerGTokenStored;
-
+    uint256 public carbonPerGTokenStored;
     // tokenId => carbonAmount
     mapping(uint256 => uint256) public carbonDeposit;
     // tokenId => gTokenBalance
     mapping(uint256 => uint256) public gTokenBalance;
-    // tokenId => credits retired per token paid
-    mapping(uint256 => uint256) public idRetiredPerTokenPaid;
+    // tokenId => carbon credits per token paid
+    mapping(uint256 => uint256) public idCarbonPerTokenPaid;
     uint256 totalGToken;
     uint256 carbonCreditsRetired;
 
@@ -45,20 +42,17 @@ contract CarbonizedCollection is
         address _originalCollection,
         address _gTokenVaultAddress,
         address _carbonCredit,
-        string memory name,
-        string memory symbol
+        string memory _name,
+        string memory _symbol,
+        string memory _baseURI
     ) external virtual initializer {
         __Ownable_init();
-        __ERC721_init(name, symbol);
+        __ERC721_init(_name, _symbol);
         originalCollection = IERC721Upgradeable(_originalCollection);
         gTokenVault = ImpactVaultInterface(_gTokenVaultAddress);
         carbonCredit = _carbonCredit;
         baseExtension = ".json";
-        baseURI = "https://ipfs.io/ipfs/QmTn1W5CpTdqrkvdSLb7nXGWVYYmoTWMv8N2ripQthXw2v/";
-    }
-
-    function _baseURI() internal view override returns (string memory) {
-        return baseURI;
+        baseURI = _baseURI;
     }
 
     function carbonize(uint256 tokenId, uint256 amount)
@@ -99,14 +93,15 @@ contract CarbonizedCollection is
         }
     }
 
-    function retireCarbon(uint256 amount) external _updateCarbonDeposits(-1) {
-        require(
-            IERC20Upgradeable(carbonCredit).balanceOf(address(this)) > 0,
-            "CarbonizedCollection: No credits to retire."
-        );
-        // TODO: retire carbon
-        carbonCreditsRetired += amount;
-    }
+    // TODO: When Celo carbon retirment available
+    // function retireCarbon(uint256 amount) external _updateCarbonDeposits(-1) {
+    //     require(
+    //         IERC20Upgradeable(carbonCredit).balanceOf(address(this)) > 0,
+    //         "CarbonizedCollection: No credits to retire."
+    //     );
+    //
+    //     carbonCreditsRetired += amount;
+    // }
 
     function carbonBalance(address account) external view returns (uint256 carbon) {
         (, uint256[] memory carbonBalances, ) = walletOfOwner(account);
@@ -144,25 +139,28 @@ contract CarbonizedCollection is
         return (tokenIds, carbonDeposits, gTokenBalances);
     }
 
-    function carbonRetired(uint256 tokenId) public view returns (uint256 carbon) {
-        return (((gTokenBalance[tokenId] * (retiredPerGToken() - idRetiredPerTokenPaid[tokenId])) /
+    function carbonCollected(uint256 tokenId) public view returns (uint256 carbon) {
+        return (((gTokenBalance[tokenId] * (carbonPerGToken() - idCarbonPerTokenPaid[tokenId])) /
             1e18) + carbonDeposit[tokenId]);
     }
 
     modifier _updateCarbonDeposits(int256 tokenId) {
-        retiredPerGTokenStored = retiredPerGToken();
+        carbonPerGTokenStored = carbonPerGToken();
         if (tokenId > -1) {
-            carbonDeposit[uint256(tokenId)] = carbonRetired(uint256(tokenId));
-            idRetiredPerTokenPaid[uint256(tokenId)] = retiredPerGTokenStored;
+            carbonDeposit[uint256(tokenId)] = carbonCollected(uint256(tokenId));
+            idCarbonPerTokenPaid[uint256(tokenId)] = carbonPerGTokenStored;
         }
         _;
     }
 
-    function retiredPerGToken() public view returns (uint256) {
+    function carbonPerGToken() public view returns (uint256) {
         if (totalGToken == 0) {
-            return retiredPerGTokenStored;
+            return carbonPerGTokenStored;
         }
-        return retiredPerGTokenStored + (carbonCreditsRetired / totalGToken);
+        return
+            carbonPerGTokenStored +
+            ((carbonCreditsRetired + IERC20Upgradeable(carbonCredit).balanceOf(address(this))) /
+                totalGToken);
     }
 
     function onERC721Received(
