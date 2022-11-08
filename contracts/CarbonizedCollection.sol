@@ -8,8 +8,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradea
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "./GTokenEscrow.sol";
+import "./interface/IGTokenEscrow.sol";
+import "./interface/IEscrowDeployer.sol";
 
 /// @title CarbonizedCollection
 /// @author Bridger Zoske
@@ -23,6 +23,7 @@ contract CarbonizedCollection is
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     IERC721Upgradeable public originalCollection;
+    IEscrowDeployer public deployer;
     address public gTokenVaultAddress;
     address public carbonCredit;
     string public baseURI;
@@ -56,9 +57,8 @@ contract CarbonizedCollection is
     function carbonize(uint256 tokenId) public payable _updateCarbonDeposits(int256(tokenId)) {
         originalCollection.safeTransferFrom(msg.sender, address(this), tokenId);
         // deploy gTokenEscrow contract if not already deployed
-        if (gTokenEscrow[tokenId] == address(0))
-            gTokenEscrow[tokenId] = address(new GTokenEscrow(gTokenVaultAddress));
-        GTokenEscrow(gTokenEscrow[tokenId]).deposit{value: msg.value}();
+        if (gTokenEscrow[tokenId] == address(0)) gTokenEscrow[tokenId] = deployer.deploy();
+        IGTokenEscrow(gTokenEscrow[tokenId]).deposit{value: msg.value}();
         totalGToken += msg.value;
         mint(tokenId);
     }
@@ -68,21 +68,14 @@ contract CarbonizedCollection is
             gTokenEscrow[tokenId] == address(0),
             "CarbonizedCollection: tokenId is not carbonized"
         );
-        GTokenEscrow(gTokenEscrow[tokenId]).withdraw();
+        IGTokenEscrow(gTokenEscrow[tokenId]).withdraw();
     }
 
     function decarbonize(uint256 tokenId) public _updateCarbonDeposits(int256(tokenId)) {
         originalCollection.safeTransferFrom(address(this), msg.sender, tokenId);
-        totalGToken -= GTokenEscrow(gTokenEscrow[tokenId]).gTokenBalance();
-        GTokenEscrow(gTokenEscrow[tokenId]).claim();
+        totalGToken -= IGTokenEscrow(gTokenEscrow[tokenId]).gTokenBalance();
+        IGTokenEscrow(gTokenEscrow[tokenId]).claim();
         _burn(tokenId);
-    }
-
-    function carbonBalance(address account) external view returns (uint256 carbon) {
-        (, uint256[] memory carbonBalances) = walletOfOwner(account);
-        for (uint256 i = 0; i < carbonBalances.length; i++) {
-            carbon += carbonBalances[i];
-        }
     }
 
     function exists(uint256 tokenId) public view returns (bool) {
@@ -109,7 +102,7 @@ contract CarbonizedCollection is
     }
 
     function carbonCollected(uint256 tokenId) public view returns (uint256 carbon) {
-        return (((GTokenEscrow(gTokenEscrow[tokenId]).gTokenBalance() *
+        return (((IGTokenEscrow(gTokenEscrow[tokenId]).gTokenBalance() *
             (carbonPerGToken() - idCarbonPerTokenPaid[tokenId])) / 1e18) + carbonDeposit[tokenId]);
     }
 

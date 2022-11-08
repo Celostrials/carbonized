@@ -13,50 +13,44 @@ chai.use(solidity)
 describe("Collection Carbonization Tests", function () {
   let collection: MockNFT
   let carbonizedCollection: CarbonizedCollection
-  let celo: ERC20
-  let celoWhale: SignerWithAddress
+  let eth: ERC20
+  let ethWhale: SignerWithAddress
   let accounts: SignerWithAddress[]
 
   this.beforeEach(async function () {
-    // accounts = await ethers.getSigners()
-    // // initialize celo contract
-    // celo = ERC20__factory.connect(
-    //   "0x471EcE3750Da237f93B8E339c536989b8978a438",
-    //   (await ethers.getSigners())[0]
-    // )
-    // // Deploy original collection
-    // const nftFactory = await ethers.getContractFactory("MockNFT")
-    // collection = (await nftFactory.deploy("mock", "mock", "https://ipfs")) as MockNFT
-    // // Get whale signer
-    // celoWhale = await ethers.getSigner("0xef268b5C05452D63a17Da12f562368e88a036Ef1")
-    // // Deploy CarbonizedCollection Contract
-    // const carbonizedCollectionFactory = await ethers.getContractFactory("CarbonizedCollection")
-    // let args = [
-    //   collection.address,
-    //   "0x8A1639098644A229d08F441ea45A63AE050Ee018",
-    //   "0x02de4766c272abc10bc88c220d214a26960a7e92",
-    //   "Carbonized Mock",
-    //   "NFT02",
-    //   "https://ipfs",
-    // ]
-    // carbonizedCollection = (await upgrades.deployProxy(
-    //   carbonizedCollectionFactory,
-    //   args
-    // )) as CarbonizedCollection
-    // // set approval for carbonizedContract to transfer original collection
-    // await expect(
-    //   collection.setApprovalForAll(carbonizedCollection.address, true)
-    // ).to.not.be.reverted
-    // // set approval for carbon to transfer carbonized contract
-    // await expect(
-    //   celo.connect(celoWhale).approve(carbonizedCollection.address, ethers.constants.MaxUint256)
-    // ).to.not.be.reverted
+    accounts = await ethers.getSigners()
+
+    // Deploy original collection
+    const nftFactory = await ethers.getContractFactory("MockNFT")
+    collection = (await nftFactory.deploy("mock", "mock", "https://ipfs")) as MockNFT
+
+    // Deploy CarbonizedCollection Contract
+    const carbonizedCollectionFactory = await ethers.getContractFactory("CarbonizedCollection")
+    let args = [
+      collection.address,
+      "0x8A1639098644A229d08F441ea45A63AE050Ee018",
+      "0x02de4766c272abc10bc88c220d214a26960a7e92",
+      "Carbonized Mock",
+      "NFT02",
+      "https://ipfs",
+    ]
+    carbonizedCollection = (await upgrades.deployProxy(
+      carbonizedCollectionFactory,
+      args
+    )) as CarbonizedCollection
+    // set approval for carbonizedContract to transfer original collection
+    await expect(
+      collection.setApprovalForAll(carbonizedCollection.address, true)
+    ).to.not.be.reverted
+    // set approval for carbon to transfer carbonized contract
+    await expect(
+      eth.connect(ethWhale).approve(carbonizedCollection.address, ethers.constants.MaxUint256)
+    ).to.not.be.reverted
   })
 
   it("Test", async function () {
-    // console.log(celo.address)
-    // console.log(celo.provider)
-    // console.log(formatEther(await celo.totalSupply()))
+    console.log(eth)
+    // console.log(formatEther(await eth.totalSupply()))
   })
 
   // it("Test Carbonization", async function () {

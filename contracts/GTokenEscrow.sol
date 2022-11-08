@@ -7,10 +7,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/ImpactVaultInterface.sol";
+import "./interface/IGTokenEscrow.sol";
 
 /// @title CarbonizedCollection
 /// @author Bridger Zoske
-contract GTokenEscrow is Ownable {
+contract GTokenEscrow is Ownable, IGTokenEscrow {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     ImpactVaultInterface public gTokenVault;
@@ -21,14 +22,14 @@ contract GTokenEscrow is Ownable {
         gTokenVault = ImpactVaultInterface(_gTokenVaultAddress);
     }
 
-    function deposit() external payable {
+    function deposit() external payable override {
         gTokenBalance += msg.value;
         gTokenVault.asset().safeTransferFrom(msg.sender, address(this), msg.value);
         gTokenVault.asset().approve(address(gTokenVault), msg.value);
         gTokenVault.deposit(msg.value, address(this));
     }
 
-    function withdraw() external payable {
+    function withdraw() external override {
         require(
             !gTokenVault.hasWithdrawalReady(address(this)),
             "CarbonizedCollection: tokenId already decarbonized"
@@ -44,11 +45,13 @@ contract GTokenEscrow is Ownable {
         return gTokenVault.withdrawals(address(this));
     }
 
-    function claim() external payable {
+    function claim() external override {
         require(
             gTokenVault.hasWithdrawalReady(address(this)),
             "CarbonizedCollection: no withdrawal ready for tokenId"
         );
         gTokenVault.claim();
     }
+
+    // TODO: only callable by CarbonizedCollection Contract
 }
