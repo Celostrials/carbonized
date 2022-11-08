@@ -9,11 +9,10 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721Enumer
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "./interface/ImpactVaultInterface.sol";
+import "./GTokenEscrow.sol";
 
 /// @title CarbonizedCollection
 /// @author Bridger Zoske
-/// @notice
 /// @dev This contract inherits from both ERC721 that ERC721Receiver which enables both mint
 /// and burn as well as the safe storage of other ERC721 tokens.
 contract CarbonizedCollection is
@@ -24,15 +23,15 @@ contract CarbonizedCollection is
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     IERC721Upgradeable public originalCollection;
-    ImpactVaultInterface public gTokenVault;
+    address public gTokenVaultAddress;
     address public carbonCredit;
     string public baseURI;
     string public baseExtension;
     uint256 public carbonPerGTokenStored;
     // tokenId => carbonAmount
     mapping(uint256 => uint256) public carbonDeposit;
-    // tokenId => gTokenBalance
-    mapping(uint256 => uint256) public gTokenBalance;
+    // tokenId => GTokenEscrow
+    mapping(uint256 => address) public gTokenEscrow;
     // tokenId => carbon credits per token paid
     mapping(uint256 => uint256) public idCarbonPerTokenPaid;
     uint256 totalGToken;
@@ -48,52 +47,39 @@ contract CarbonizedCollection is
         __Ownable_init();
         __ERC721_init(_name, _symbol);
         originalCollection = IERC721Upgradeable(_originalCollection);
-        gTokenVault = ImpactVaultInterface(_gTokenVaultAddress);
+        gTokenVaultAddress = _gTokenVaultAddress;
         carbonCredit = _carbonCredit;
         baseExtension = ".json";
         baseURI = _baseURI;
     }
 
-    function carbonize(uint256 tokenId, uint256 amount)
-        public
-        _updateCarbonDeposits(int256(tokenId))
-    {
-        gTokenVault.asset().safeTransferFrom(msg.sender, address(this), amount);
-        gTokenVault.asset().approve(address(gTokenVault), amount);
-        gTokenVault.deposit(amount, address(this));
+    function carbonize(uint256 tokenId) public payable _updateCarbonDeposits(int256(tokenId)) {
         originalCollection.safeTransferFrom(msg.sender, address(this), tokenId);
-        gTokenBalance[tokenId] += amount;
-        totalGToken += amount;
+        // deploy gTokenEscrow contract if not already deployed
+        if (gTokenEscrow[tokenId] == address(0))
+            gTokenEscrow[tokenId] = address(new GTokenEscrow(gTokenVaultAddress));
+        GTokenEscrow(gTokenEscrow[tokenId]).deposit{value: msg.value}();
+        totalGToken += msg.value;
         mint(tokenId);
     }
 
+    function startDecarbonize(uint256 tokenId) external {
+        require(
+            gTokenEscrow[tokenId] == address(0),
+            "CarbonizedCollection: tokenId is not carbonized"
+        );
+        GTokenEscrow(gTokenEscrow[tokenId]).withdraw();
+    }
+
     function decarbonize(uint256 tokenId) public _updateCarbonDeposits(int256(tokenId)) {
-        require(gTokenBalance[tokenId] != 0, "CarbonizedCollection: tokenId has no gToken");
         originalCollection.safeTransferFrom(address(this), msg.sender, tokenId);
-        gTokenVault.withdraw(gTokenBalance[tokenId], msg.sender, msg.sender);
-        totalGToken -= gTokenBalance[tokenId];
-        gTokenBalance[tokenId] = 0;
+        totalGToken -= GTokenEscrow(gTokenEscrow[tokenId]).gTokenBalance();
+        GTokenEscrow(gTokenEscrow[tokenId]).claim();
         _burn(tokenId);
     }
 
-    function carbonizeBatch(uint256[] memory tokenIds, uint256[] memory amounts) external {
-        require(
-            tokenIds.length == amounts.length,
-            "CarbonizedCollection: invalid tokenIds and amounts"
-        );
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            carbonize(tokenIds[i], amounts[i]);
-        }
-    }
-
-    function decarbonizeBatch(uint256[] memory tokenIds) external {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            decarbonize(tokenIds[i]);
-        }
-    }
-
     function carbonBalance(address account) external view returns (uint256 carbon) {
-        (, uint256[] memory carbonBalances, ) = walletOfOwner(account);
+        (, uint256[] memory carbonBalances) = walletOfOwner(account);
         for (uint256 i = 0; i < carbonBalances.length; i++) {
             carbon += carbonBalances[i];
         }
@@ -110,27 +96,21 @@ contract CarbonizedCollection is
     function walletOfOwner(address _owner)
         public
         view
-        returns (
-            uint256[] memory,
-            uint256[] memory,
-            uint256[] memory
-        )
+        returns (uint256[] memory, uint256[] memory)
     {
         uint256 ownerTokenCount = balanceOf(_owner);
         uint256[] memory tokenIds = new uint256[](ownerTokenCount);
         uint256[] memory carbonDeposits = new uint256[](ownerTokenCount);
-        uint256[] memory gTokenBalances = new uint256[](ownerTokenCount);
         for (uint256 i; i < ownerTokenCount; i++) {
             tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
-            carbonDeposits[i] = carbonDeposit[tokenIds[i]];
-            gTokenBalances[i] = gTokenBalance[tokenIds[i]];
+            carbonDeposits[i] = carbonCollected(tokenIds[i]);
         }
-        return (tokenIds, carbonDeposits, gTokenBalances);
+        return (tokenIds, carbonDeposits);
     }
 
     function carbonCollected(uint256 tokenId) public view returns (uint256 carbon) {
-        return (((gTokenBalance[tokenId] * (carbonPerGToken() - idCarbonPerTokenPaid[tokenId])) /
-            1e18) + carbonDeposit[tokenId]);
+        return (((GTokenEscrow(gTokenEscrow[tokenId]).gTokenBalance() *
+            (carbonPerGToken() - idCarbonPerTokenPaid[tokenId])) / 1e18) + carbonDeposit[tokenId]);
     }
 
     modifier _updateCarbonDeposits(int256 tokenId) {

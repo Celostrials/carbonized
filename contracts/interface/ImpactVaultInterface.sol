@@ -8,6 +8,9 @@ interface ImpactVaultInterface {
     // Returns the depositing asset.
     function asset() external returns (IERC20Upgradeable);
 
+    // claims ready withdrawls
+    function claim() external;
+
     // Returns the yield asset held by the vault.
     function yieldAsset() external returns (IERC20Upgradeable);
 
@@ -20,6 +23,12 @@ interface ImpactVaultInterface {
         address _receiver,
         address _owner
     ) external;
+
+    function withdrawals(address _owner) external returns (uint256 value, uint256 timestamp);
+
+    function hasOutstandingWithdrawal(address _owner) external returns (bool);
+
+    function hasWithdrawalReady(address _owner) external returns (bool);
 
     // Withdraws yield asset owned by "_owner" to "_receiver". Note that
     // "_amount" is denominated in asset so this is converted to the
