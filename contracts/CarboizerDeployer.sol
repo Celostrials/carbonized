@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.0;
 
-import "./GTokenEscrow.sol";
-import "./interface/IEscrowDeployer.sol";
+import "./Carbonizer.sol";
+import "./interface/ICarbonizerDeployer.sol";
 
-/// @title CarbonizedCollection
+/// @title CarboizerDeployer
 /// @author Bridger Zoske
-contract EscrowDeployer is Ownable, IEscrowDeployer {
+contract CarboizerDeployer is Ownable, ICarbonizerDeployer {
     address public carbonizedCollectionAddress;
     address public gTokenVault;
 
@@ -17,6 +17,6 @@ contract EscrowDeployer is Ownable, IEscrowDeployer {
     }
 
     function deploy() external override returns (address) {
-        return address(new GTokenEscrow(gTokenVault));
+        return address(new Carbonizer(gTokenVault));
     }
 }

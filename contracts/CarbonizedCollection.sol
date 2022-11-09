@@ -8,8 +8,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradea
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "./interface/IGTokenEscrow.sol";
-import "./interface/IEscrowDeployer.sol";
+import "./interface/ICarbonizer.sol";
+import "./interface/ICarbonizerDeployer.sol";
 
 /// @title CarbonizedCollection
 /// @author Bridger Zoske
@@ -23,24 +23,17 @@ contract CarbonizedCollection is
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     IERC721Upgradeable public originalCollection;
-    IEscrowDeployer public deployer;
+    ICarbonizerDeployer public deployer;
     address public gTokenVaultAddress;
-    address public carbonCredit;
     string public baseURI;
     string public baseExtension;
-    uint256 public carbonPerGTokenStored;
-    // tokenId => carbonAmount
-    mapping(uint256 => uint256) public carbonDeposit;
-    // tokenId => GTokenEscrow
-    mapping(uint256 => address) public gTokenEscrow;
-    // tokenId => carbon credits per token paid
-    mapping(uint256 => uint256) public idCarbonPerTokenPaid;
-    uint256 totalGToken;
+
+    // tokenId => carbonizer
+    mapping(uint256 => address) public carbonizer;
 
     function initialize(
         address _originalCollection,
         address _gTokenVaultAddress,
-        address _carbonCredit,
         string memory _name,
         string memory _symbol,
         string memory _baseURI
@@ -49,32 +42,30 @@ contract CarbonizedCollection is
         __ERC721_init(_name, _symbol);
         originalCollection = IERC721Upgradeable(_originalCollection);
         gTokenVaultAddress = _gTokenVaultAddress;
-        carbonCredit = _carbonCredit;
         baseExtension = ".json";
         baseURI = _baseURI;
     }
 
-    function carbonize(uint256 tokenId) public payable _updateCarbonDeposits(int256(tokenId)) {
+    function carbonize(uint256 tokenId) public payable {
         originalCollection.safeTransferFrom(msg.sender, address(this), tokenId);
-        // deploy gTokenEscrow contract if not already deployed
-        if (gTokenEscrow[tokenId] == address(0)) gTokenEscrow[tokenId] = deployer.deploy();
-        IGTokenEscrow(gTokenEscrow[tokenId]).deposit{value: msg.value}();
-        totalGToken += msg.value;
+        // deploy carbonizer contract if not already deployed
+        if (carbonizer[tokenId] == address(0)) carbonizer[tokenId] = deployer.deploy();
+        ICarbonizer(carbonizer[tokenId]).deposit{value: msg.value}();
         mint(tokenId);
     }
 
     function startDecarbonize(uint256 tokenId) external {
         require(
-            gTokenEscrow[tokenId] == address(0),
+            carbonizer[tokenId] == address(0),
             "CarbonizedCollection: tokenId is not carbonized"
         );
-        IGTokenEscrow(gTokenEscrow[tokenId]).withdraw();
+        ICarbonizer(carbonizer[tokenId]).withdraw();
     }
 
-    function decarbonize(uint256 tokenId) public _updateCarbonDeposits(int256(tokenId)) {
+    function decarbonize(uint256 tokenId) public {
         originalCollection.safeTransferFrom(address(this), msg.sender, tokenId);
-        totalGToken -= IGTokenEscrow(gTokenEscrow[tokenId]).gTokenBalance();
-        IGTokenEscrow(gTokenEscrow[tokenId]).claim();
+        ICarbonizer(carbonizer[tokenId]).claim();
+        // TODO: asset() may need to be transfered to caller or reciever may need to change on withdraw()?
         _burn(tokenId);
     }
 
@@ -89,39 +80,16 @@ contract CarbonizedCollection is
     function walletOfOwner(address _owner)
         public
         view
-        returns (uint256[] memory, uint256[] memory)
+        returns (uint256[] memory, address[] memory)
     {
         uint256 ownerTokenCount = balanceOf(_owner);
         uint256[] memory tokenIds = new uint256[](ownerTokenCount);
-        uint256[] memory carbonDeposits = new uint256[](ownerTokenCount);
+        address[] memory carbonizers = new address[](ownerTokenCount);
         for (uint256 i; i < ownerTokenCount; i++) {
             tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
-            carbonDeposits[i] = carbonCollected(tokenIds[i]);
+            carbonizers[i] = carbonizer[tokenIds[i]];
         }
-        return (tokenIds, carbonDeposits);
-    }
-
-    function carbonCollected(uint256 tokenId) public view returns (uint256 carbon) {
-        return (((IGTokenEscrow(gTokenEscrow[tokenId]).gTokenBalance() *
-            (carbonPerGToken() - idCarbonPerTokenPaid[tokenId])) / 1e18) + carbonDeposit[tokenId]);
-    }
-
-    modifier _updateCarbonDeposits(int256 tokenId) {
-        carbonPerGTokenStored = carbonPerGToken();
-        if (tokenId > -1) {
-            carbonDeposit[uint256(tokenId)] = carbonCollected(uint256(tokenId));
-            idCarbonPerTokenPaid[uint256(tokenId)] = carbonPerGTokenStored;
-        }
-        _;
-    }
-
-    function carbonPerGToken() public view returns (uint256) {
-        if (totalGToken == 0) {
-            return carbonPerGTokenStored;
-        }
-        return
-            carbonPerGTokenStored +
-            (IERC20Upgradeable(carbonCredit).balanceOf(address(this)) / totalGToken);
+        return (tokenIds, carbonizers);
     }
 
     function onERC721Received(

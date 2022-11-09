@@ -7,15 +7,14 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/ImpactVaultInterface.sol";
-import "./interface/IGTokenEscrow.sol";
+import "./interface/ICarbonizer.sol";
 
-/// @title CarbonizedCollection
+/// @title Carbonizer
 /// @author Bridger Zoske
-contract GTokenEscrow is Ownable, IGTokenEscrow {
+contract Carbonizer is Ownable, ICarbonizer {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     ImpactVaultInterface public gTokenVault;
-
     uint256 public gTokenBalance;
 
     constructor(address _gTokenVaultAddress) {
