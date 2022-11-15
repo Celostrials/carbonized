@@ -5,14 +5,12 @@ pragma solidity ^0.8.0;
 import "./Carbonizer.sol";
 import "./interface/ICarbonizerDeployer.sol";
 
-/// @title CarboizerDeployer
+/// @title CarbonizerDeployer
 /// @author Bridger Zoske
-contract CarboizerDeployer is Ownable, ICarbonizerDeployer {
-    address public carbonizedCollectionAddress;
+contract CarbonizerDeployer is Ownable, ICarbonizerDeployer {
     address public gTokenVault;
 
-    constructor(address _carbonizedCollectionAddress, address _gtokenVault) {
-        carbonizedCollectionAddress = _carbonizedCollectionAddress;
+    constructor(address _gtokenVault) {
         gTokenVault = _gtokenVault;
     }
 

@@ -23,7 +23,6 @@ contract Carbonizer is Ownable, ICarbonizer {
 
     function deposit() external payable override {
         gTokenBalance += msg.value;
-        gTokenVault.asset().safeTransferFrom(msg.sender, address(this), msg.value);
         gTokenVault.asset().approve(address(gTokenVault), msg.value);
         gTokenVault.deposit(msg.value, address(this));
     }
