@@ -15,7 +15,7 @@ interface ImpactVaultInterface {
     function yieldAsset() external returns (IERC20Upgradeable);
 
     // Deposit asset on behalf of "_receiver".
-    function deposit(uint256 _amount, address _receiver) external;
+    function depositETH(address _receiver) external payable;
 
     // Withdraws asset to owned by "_owner" to "_receiver".
     function withdraw(

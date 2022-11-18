@@ -24,7 +24,6 @@ contract CarbonizedCollection is
 
     IERC721Upgradeable public originalCollection;
     ICarbonizerDeployer public deployer;
-    address public gTokenVaultAddress;
     string public baseURI;
     string public baseExtension;
 
@@ -33,7 +32,6 @@ contract CarbonizedCollection is
 
     function initialize(
         address _originalCollection,
-        address _gTokenVaultAddress,
         address _deployer,
         string memory _name,
         string memory _symbol,
@@ -42,7 +40,6 @@ contract CarbonizedCollection is
         __Ownable_init();
         __ERC721_init(_name, _symbol);
         originalCollection = IERC721Upgradeable(_originalCollection);
-        gTokenVaultAddress = _gTokenVaultAddress;
         deployer = ICarbonizerDeployer(_deployer);
         baseExtension = ".json";
         baseURI = _baseURI;

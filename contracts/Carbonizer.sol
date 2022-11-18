@@ -23,8 +23,7 @@ contract Carbonizer is Ownable, ICarbonizer {
 
     function deposit() external payable override {
         gTokenBalance += msg.value;
-        gTokenVault.asset().approve(address(gTokenVault), msg.value);
-        gTokenVault.deposit(msg.value, address(this));
+        gTokenVault.depositETH{value: msg.value}(address(this));
     }
 
     function withdraw() external override {
@@ -49,6 +48,10 @@ contract Carbonizer is Ownable, ICarbonizer {
             "CarbonizedCollection: no withdrawal ready for tokenId"
         );
         gTokenVault.claim();
+    }
+
+    function getYield() external view returns (uint256) {
+        return gTokenVault.getYield(address(this));
     }
 
     // TODO: only callable by CarbonizedCollection Contract
