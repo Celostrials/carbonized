@@ -3,7 +3,7 @@ import { expect } from "chai"
 import chai from "chai"
 import { solidity } from "ethereum-waffle"
 import { stringToEth, ethToString } from "../utils/utils"
-import { CarbonizedCollection, ERC20, MockNFT } from "../types"
+import { CarbonizedCollection, Carbonizer__factory, ERC20, MockNFT } from "../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { ERC20__factory } from "../types/factories/ERC20__factory"
 import { formatEther, parseEther } from "ethers/lib/utils"
@@ -59,7 +59,18 @@ describe("Decarbonization Tests", function () {
     await expect(carbonizedCollection.carbonize(1, { value: parseEther("10") })).to.not.be.reverted
   })
 
-  it("Starting decarbonization creates a withdraw", async function () {})
+  it("Starting decarbonization creates a withdraw", async function () {
+    // await expect(carbonizedCollection.startDecarbonize(1)).to.not.be.reverted
+    await (await carbonizedCollection.startDecarbonize(1)).wait()
+    const carbonizer = Carbonizer__factory.connect(
+      await carbonizedCollection.carbonizer(1),
+      accountA
+    )
+    await ethers.provider.send("evm_increaseTime", [1000000000000])
+    await ethers.provider.send("evm_mine", [])
+    await (await carbonizedCollection.decarbonize(1)).wait()
+    console.log(await carbonizer.withdrawls())
+  })
 
   it("Claiming before decarbonization has finished reverts", async function () {})
 

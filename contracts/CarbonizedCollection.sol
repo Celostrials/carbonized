@@ -55,7 +55,7 @@ contract CarbonizedCollection is
 
     function startDecarbonize(uint256 tokenId) external {
         require(
-            carbonizer[tokenId] == address(0),
+            carbonizer[tokenId] != address(0),
             "CarbonizedCollection: tokenId is not carbonized"
         );
         ICarbonizer(carbonizer[tokenId]).withdraw();

@@ -18,17 +18,9 @@ interface ImpactVaultInterface {
     function depositETH(address _receiver) external payable;
 
     // Withdraws asset to owned by "_owner" to "_receiver".
-    function withdraw(
-        uint256 _amount,
-        address _receiver,
-        address _owner
-    ) external;
+    function withdrawAll(address _receiver, address _owner) external;
 
-    function withdrawals(address _owner) external returns (uint256 value, uint256 timestamp);
-
-    function hasOutstandingWithdrawal(address _owner) external returns (bool);
-
-    function hasWithdrawalReady(address _owner) external returns (bool);
+    function withdrawals(address _owner) external view returns (uint256 value, uint256 timestamp);
 
     // Withdraws yield asset owned by "_owner" to "_receiver". Note that
     // "_amount" is denominated in asset so this is converted to the

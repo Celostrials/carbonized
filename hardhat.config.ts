@@ -52,7 +52,9 @@ enum chainIds {
 
 const config: HardhatUserConfig = {
   defaultNetwork,
-
+  mocha: {
+    timeout: 100000000,
+  },
   networks: {
     hardhat: {
       forking: {
