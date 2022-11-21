@@ -14,7 +14,7 @@ contract CarbonizerDeployer is Ownable, ICarbonizerDeployer {
         gTokenVault = _gtokenVault;
     }
 
-    function deploy() external override returns (address) {
-        return address(new Carbonizer(gTokenVault));
+    function deploy(address _carbonizedCollection) external override returns (address) {
+        return address(new Carbonizer(gTokenVault, _carbonizedCollection));
     }
 }

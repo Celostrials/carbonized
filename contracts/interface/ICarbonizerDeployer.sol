@@ -3,5 +3,5 @@
 pragma solidity ^0.8.0;
 
 interface ICarbonizerDeployer {
-    function deploy() external returns (address);
+    function deploy(address _carbonizedCollection) external returns (address);
 }

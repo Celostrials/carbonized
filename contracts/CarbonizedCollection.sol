@@ -46,11 +46,14 @@ contract CarbonizedCollection is
     }
 
     function carbonize(uint256 tokenId) public payable {
-        originalCollection.safeTransferFrom(msg.sender, address(this), tokenId);
         // deploy carbonizer contract if not already deployed
-        if (carbonizer[tokenId] == address(0)) carbonizer[tokenId] = deployer.deploy();
+        if (carbonizer[tokenId] == address(0)) carbonizer[tokenId] = deployer.deploy(address(this));
+        // if token not already carbonized
+        if (!exists(tokenId)) {
+            originalCollection.safeTransferFrom(msg.sender, address(this), tokenId);
+            mint(tokenId);
+        }
         ICarbonizer(carbonizer[tokenId]).deposit{value: msg.value}();
-        mint(tokenId);
     }
 
     function startDecarbonize(uint256 tokenId) external {
@@ -58,13 +61,12 @@ contract CarbonizedCollection is
             carbonizer[tokenId] != address(0),
             "CarbonizedCollection: tokenId is not carbonized"
         );
-        ICarbonizer(carbonizer[tokenId]).withdraw();
+        ICarbonizer(carbonizer[tokenId]).withdraw(msg.sender);
     }
 
     function decarbonize(uint256 tokenId) public {
         originalCollection.safeTransferFrom(address(this), msg.sender, tokenId);
         ICarbonizer(carbonizer[tokenId]).claim();
-        // TODO: asset() may need to be transfered to caller or reciever may need to change on withdraw()?
         _burn(tokenId);
     }
 

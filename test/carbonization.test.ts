@@ -2,10 +2,8 @@ import { ethers, upgrades } from "hardhat"
 import { expect } from "chai"
 import chai from "chai"
 import { solidity } from "ethereum-waffle"
-import { stringToEth, ethToString } from "../utils/utils"
-import { CarbonizedCollection, ERC20, MockNFT } from "../types"
+import { CarbonizedCollection, MockNFT } from "../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { ERC20__factory } from "../types/factories/ERC20__factory"
 import { formatEther, parseEther } from "ethers/lib/utils"
 import { Carbonizer__factory } from "../types/factories/Carbonizer__factory"
 
@@ -13,7 +11,6 @@ chai.use(solidity)
 
 describe("Carbonization Tests", function () {
   let collection: MockNFT
-  let gEth: ERC20
   let carbonizedCollection: CarbonizedCollection
   let accountA: SignerWithAddress
 
@@ -23,8 +20,6 @@ describe("Carbonization Tests", function () {
     accountA = accounts[1]
 
     const gEthAddress = "0x06a0CCFb89E9B2814afCA6637C22ed83909739Ee"
-
-    gEth = ERC20__factory.connect(gEthAddress, accountA)
 
     // Deploy original collection
     const nftFactory = await ethers.getContractFactory("MockNFT")
@@ -67,20 +62,17 @@ describe("Carbonization Tests", function () {
     await expect(carbonizedCollection.carbonize(1, { value: parseEther("10") })).to.not.be.reverted
     expect(await carbonizedCollection.exists(1)).to.be.true
   })
-  it("Carbonization deposits eth to ImpactVault", async function () {
-    expect(Number(formatEther(await accountA.getBalance()))).to.be.greaterThan(9999)
-    await expect(carbonizedCollection.carbonize(1, { value: parseEther("10") })).to.not.be.reverted
-    expect(Number(formatEther(await accountA.getBalance()))).to.be.lessThan(9999)
-  })
   it("Carbonization mints gToken for tokenId's Carbonizer contract", async function () {
     expect(await carbonizedCollection.carbonizer(1)).to.equal(
       "0x0000000000000000000000000000000000000000"
     )
     await expect(carbonizedCollection.carbonize(1, { value: parseEther("10") })).to.not.be.reverted
     expect(await carbonizedCollection.carbonizer(1)).to.be.properAddress
-    expect(formatEther(await gEth.balanceOf(await carbonizedCollection.carbonizer(1)))).to.equal(
-      "9.999999999999999999"
+    const carbonizer = Carbonizer__factory.connect(
+      await carbonizedCollection.carbonizer(1),
+      accountA
     )
+    expect(formatEther(await carbonizer.getDeposit())).to.equal("9.999999999999999999")
   })
 
   it("Passing time accrues yield for carbonized tokenIds", async function () {
@@ -90,8 +82,13 @@ describe("Carbonization Tests", function () {
       accountA
     )
     expect(formatEther(await carbonizer.getYield())).to.equal("0.0")
-    await ethers.provider.send("evm_increaseTime", [1000000000000])
+    console.log(ethers.provider.blockNumber)
+
+    await ethers.provider.send("hardhat_mine", ["0x3e8"])
     await ethers.provider.send("evm_mine", [])
+    await ethers.provider.send("evm_mine", [])
+
+    console.log(ethers.provider.blockNumber)
     // expect(formatEther(await carbonizer.getYield())).to.equal("1.0")
     console.log(await carbonizer.getYield())
   })

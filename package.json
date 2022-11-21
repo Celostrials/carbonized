@@ -38,7 +38,7 @@
     "ethers": "^5.4.4",
     "fs-extra": "^10.0.0",
     "ganache-cli": "^6.12.2",
-    "hardhat": "2.6.0",
+    "hardhat": "2.9.0",
     "hardhat-deploy": "^0.8.11",
     "node-watch": "^0.7.0",
     "prettier": "^2.5.1",
