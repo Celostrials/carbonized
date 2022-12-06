@@ -13,8 +13,8 @@ import "./interface/ICarbonizerDeployer.sol";
 
 /// @title CarbonizedCollection
 /// @author Bridger Zoske
-/// @dev This contract inherits from both ERC721 that ERC721Receiver which enables both mint
-/// and burn as well as the safe storage of other ERC721 tokens.
+/// @dev This contract inherits from both ERC721 that ERC721Receiver which enables the mint,
+/// burn and safe storage of other ERC721 tokens.
 contract CarbonizedCollection is
     OwnableUpgradeable,
     ERC721EnumerableUpgradeable,
@@ -22,13 +22,16 @@ contract CarbonizedCollection is
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
+    /* ========== STATE VARIABLES ========== */
+
     IERC721Upgradeable public originalCollection;
     ICarbonizerDeployer public deployer;
     string public baseURI;
     string public baseExtension;
-
     // tokenId => carbonizer
     mapping(uint256 => address) public carbonizer;
+
+    /* ========== INITIALIZER ========== */
 
     function initialize(
         address _originalCollection,
@@ -45,15 +48,18 @@ contract CarbonizedCollection is
         baseURI = _baseURI;
     }
 
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
     function carbonize(uint256 tokenId) public payable {
         // deploy carbonizer contract if not already deployed
         if (carbonizer[tokenId] == address(0)) carbonizer[tokenId] = deployer.deploy(address(this));
         // if token not already carbonized
         if (!exists(tokenId)) {
             originalCollection.safeTransferFrom(msg.sender, address(this), tokenId);
-            mint(tokenId);
+            _safeMint(msg.sender, tokenId);
         }
         ICarbonizer(carbonizer[tokenId]).deposit{value: msg.value}();
+        emit TokenIdCarbonized(tokenId, msg.value);
     }
 
     function startDecarbonize(uint256 tokenId) external {
@@ -61,21 +67,33 @@ contract CarbonizedCollection is
             carbonizer[tokenId] != address(0),
             "CarbonizedCollection: tokenId is not carbonized"
         );
-        ICarbonizer(carbonizer[tokenId]).withdraw(msg.sender);
+        ICarbonizer(carbonizer[tokenId]).withdraw(); 
+    }
+ 
+    function decarbonize(uint256 tokenId) public {
+        require(ownerOf(tokenId) == msg.sender, "CarbonizedCollection: caller does not own tokenId");
+        originalCollection.safeTransferFrom(address(this), msg.sender, tokenId);
+        ICarbonizer(carbonizer[tokenId]).claim(msg.sender); 
+        _burn(tokenId);
+        emit TokenIdDecarbonized(tokenId);
     }
 
-    function decarbonize(uint256 tokenId) public {
-        originalCollection.safeTransferFrom(address(this), msg.sender, tokenId);
-        ICarbonizer(carbonizer[tokenId]).claim();
-        _burn(tokenId);
+    /* ========== VIEWS ========== */
+
+    function getDeposit(uint256 tokenId) external view returns (uint256) {
+        return ICarbonizer(carbonizer[tokenId]).getDeposit();
+    }
+
+    function withdrawls(uint256 tokenId) external view returns (uint256 value, uint256 timestamp) {
+        return ICarbonizer(carbonizer[tokenId]).withdrawls();
+    }
+
+    function getYield(uint256 tokenId) external view returns (uint256) {
+        return ICarbonizer(carbonizer[tokenId]).getYield();
     }
 
     function exists(uint256 tokenId) public view returns (bool) {
         return _exists(tokenId);
-    }
-
-    function mint(uint256 tokenId) private {
-        _safeMint(msg.sender, tokenId);
     }
 
     function walletOfOwner(address _owner)
@@ -101,4 +119,10 @@ contract CarbonizedCollection is
     ) external pure override returns (bytes4) {
         return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
     }
+
+    /* ========== EVENTS ========== */   
+
+    event TokenIdCarbonized(uint256 tokenId, uint256 amount);
+    
+    event TokenIdDecarbonized(uint256 tokenId);
 }
