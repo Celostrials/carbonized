@@ -29,15 +29,15 @@ contract Carbonizer is Ownable, ICarbonizer {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function deposit() external payable override {
+    function deposit() external payable override onlyCarbonizedCollection {
         gTokenVault.depositETH{value: msg.value}(address(this));
     }
 
-    function withdraw() external override { 
+    function withdraw() external override onlyCarbonizedCollection { 
         gTokenVault.withdrawAll(address(this), address(this));
     }
 
-    function claim(address _receiver) external override {
+    function claim(address _receiver) external override onlyCarbonizedCollection {
         (uint256 value, ) = withdrawls();
         gTokenVault.claim();
         gTokenVault.asset().transfer(_receiver, value);
