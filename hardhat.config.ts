@@ -59,6 +59,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         url: "https://eth-mainnet.alchemyapi.io/v2/NDQNd8wOnFUR27Wu5IzmqWXkEDjcwyGG",
+        // url: "https://alfajores-forno.celo-testnet.org",
       },
     },
     localhost: {

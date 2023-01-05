@@ -59,7 +59,7 @@ contract CarbonizedCollection is
             _safeMint(msg.sender, tokenId);
         }
         ICarbonizer(carbonizer[tokenId]).deposit{value: msg.value}();
-        emit TokenIdCarbonized(tokenId, msg.value);
+        emit TokenIdCarbonized(carbonizer[tokenId], tokenId, msg.value);
     }
 
     function startDecarbonize(uint256 tokenId) external {
@@ -67,15 +67,18 @@ contract CarbonizedCollection is
             carbonizer[tokenId] != address(0),
             "CarbonizedCollection: tokenId is not carbonized"
         );
-        ICarbonizer(carbonizer[tokenId]).withdraw(); 
+        ICarbonizer(carbonizer[tokenId]).withdraw();
     }
- 
+
     function decarbonize(uint256 tokenId) public {
-        require(ownerOf(tokenId) == msg.sender, "CarbonizedCollection: caller does not own tokenId");
+        require(
+            ownerOf(tokenId) == msg.sender,
+            "CarbonizedCollection: caller does not own tokenId"
+        );
         originalCollection.safeTransferFrom(address(this), msg.sender, tokenId);
-        ICarbonizer(carbonizer[tokenId]).claim(msg.sender); 
+        ICarbonizer(carbonizer[tokenId]).claim(msg.sender);
         _burn(tokenId);
-        emit TokenIdDecarbonized(tokenId);
+        emit TokenIdDecarbonized(carbonizer[tokenId], tokenId);
     }
 
     /* ========== VIEWS ========== */
@@ -120,9 +123,9 @@ contract CarbonizedCollection is
         return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
     }
 
-    /* ========== EVENTS ========== */   
+    /* ========== EVENTS ========== */
 
-    event TokenIdCarbonized(uint256 tokenId, uint256 amount);
-    
-    event TokenIdDecarbonized(uint256 tokenId);
+    event TokenIdCarbonized(address carbonizer, uint256 tokenId, uint256 amount);
+
+    event TokenIdDecarbonized(address carbonizer, uint256 tokenId);
 }
