@@ -56,12 +56,6 @@ const config: HardhatUserConfig = {
     timeout: 100000000,
   },
   networks: {
-    hardhat: {
-      forking: {
-        url: "https://eth-mainnet.alchemyapi.io/v2/NDQNd8wOnFUR27Wu5IzmqWXkEDjcwyGG",
-        // url: "https://alfajores-forno.celo-testnet.org",
-      },
-    },
     localhost: {
       url: "http://localhost:8545",
       chainId: chainIds.localhost,

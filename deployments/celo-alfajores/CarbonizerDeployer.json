@@ -1,0 +1,153 @@
+{
+  "address": "0x62507BED05d509e303DF182dE9e3e71290211Df6",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_gtokenVault",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_carbonizedCollection",
+          "type": "address"
+        }
+      ],
+      "name": "deploy",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "gTokenVault",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x7cd83a1be922724c0500396654a85c12b14aec3a6a54713dfdaae04b84207a93",
+  "receipt": {
+    "to": null,
+    "from": "0x424694437C4a72BEDc4D0FFf8709680881074E4b",
+    "contractAddress": "0x62507BED05d509e303DF182dE9e3e71290211Df6",
+    "transactionIndex": 0,
+    "gasUsed": "1444738",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000100000000000000000041000000000000000000000000000000000000020000000000000000000800000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000",
+    "blockHash": "0x60824a3c1046f5c53fc7a694bd70d1c299a8eb61720829e4ad9cfabaf1772e22",
+    "transactionHash": "0x7cd83a1be922724c0500396654a85c12b14aec3a6a54713dfdaae04b84207a93",
+    "logs": [
+      {
+        "transactionIndex": 0,
+        "blockNumber": 15743198,
+        "transactionHash": "0x7cd83a1be922724c0500396654a85c12b14aec3a6a54713dfdaae04b84207a93",
+        "address": "0x62507BED05d509e303DF182dE9e3e71290211Df6",
+        "topics": [
+          "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x000000000000000000000000424694437c4a72bedc4d0fff8709680881074e4b"
+        ],
+        "data": "0x",
+        "logIndex": 0,
+        "blockHash": "0x60824a3c1046f5c53fc7a694bd70d1c299a8eb61720829e4ad9cfabaf1772e22"
+      }
+    ],
+    "events": [
+      {
+        "transactionIndex": 0,
+        "blockNumber": 15743198,
+        "transactionHash": "0x7cd83a1be922724c0500396654a85c12b14aec3a6a54713dfdaae04b84207a93",
+        "address": "0x62507BED05d509e303DF182dE9e3e71290211Df6",
+        "topics": [
+          "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x000000000000000000000000424694437c4a72bedc4d0fff8709680881074e4b"
+        ],
+        "data": "0x",
+        "logIndex": 0,
+        "blockHash": "0x60824a3c1046f5c53fc7a694bd70d1c299a8eb61720829e4ad9cfabaf1772e22",
+        "args": [
+          "0x0000000000000000000000000000000000000000",
+          "0x424694437C4a72BEDc4D0FFf8709680881074E4b"
+        ],
+        "event": "OwnershipTransferred",
+        "eventSignature": "OwnershipTransferred(address,address)"
+      }
+    ],
+    "blockNumber": 15743198,
+    "cumulativeGasUsed": "1444738",
+    "status": 1,
+    "byzantium": true
+  }
+}
